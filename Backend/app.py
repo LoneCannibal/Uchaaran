@@ -1,36 +1,41 @@
 from flask import Flask, render_template, request, redirect, send_from_directory
 import re
 import requests
-from sarvamai import SarvamAI
-from sarvamai.play import save
 import os
 import pathlib
-import sys
-sys.path.append(str(pathlib.Path(__file__).resolve().parent))
 
+from sarvamai import SarvamAI
+from sarvamai.play import save
 
-from ApiCalls.helpers.text_to_speech import tts
-from ApiCalls.helpers.phonetic_help import phonetic_help
+from Backend.ApiCalls.helpers.text_to_speech import tts
+from Backend.ApiCalls.helpers.phonetic_help import phonetic_help
 
 # --------------------------------------------------
-# GLOBALS
+# PATHS (ABSOLUTE, PRODUCTION-SAFE)
 # --------------------------------------------------
-BASE_DIR = pathlib.Path(__file__).resolve().parent
+BASE_DIR = pathlib.Path(__file__).resolve().parent          # Backend/
+PROJECT_ROOT = BASE_DIR.parent                             # repo-root/
+
+TEMPLATES_DIR = PROJECT_ROOT / "frontend" / "templates"
+STATIC_DIR = PROJECT_ROOT / "frontend" / "static"
 
 # Render-safe writable directory (ephemeral)
 AUDIO_OUTPUT_DIR = pathlib.Path("/tmp/correct_pronunciation_output")
 
+# --------------------------------------------------
+# FLASK APP
+# --------------------------------------------------
 app = Flask(
     __name__,
-    template_folder="../frontend/templates",
-    static_folder="../frontend/static"
+    template_folder=str(TEMPLATES_DIR),
+    static_folder=str(STATIC_DIR)
 )
 
 app.config["ENV"] = "production"
 app.config["DEBUG"] = False
 
 # --------------------------------------------------
-# ENV + CLIENT INITIALIZATION (PRODUCTION SAFE)
+# ENV + CLIENT INITIALIZATION
 # --------------------------------------------------
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
 if not SARVAM_API_KEY:
@@ -210,9 +215,8 @@ def serve_audio(filename):
 def about():
     return render_template("About.html")
 
-
 # --------------------------------------------------
-# ERROR HANDLING (OPTIONAL BUT RECOMMENDED)
+# ERROR HANDLING
 # --------------------------------------------------
 @app.errorhandler(500)
 def internal_error(e):
