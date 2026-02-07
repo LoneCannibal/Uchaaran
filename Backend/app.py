@@ -16,8 +16,8 @@ from Backend.ApiCalls.helpers.phonetic_help import phonetic_help
 BASE_DIR = pathlib.Path(__file__).resolve().parent          # Backend/
 PROJECT_ROOT = BASE_DIR.parent                             # repo-root/
 
-TEMPLATES_DIR = PROJECT_ROOT / "frontend" / "templates"
-STATIC_DIR = PROJECT_ROOT / "frontend" / "static"
+TEMPLATES_DIR = PROJECT_ROOT / "Frontend" / "Templates"
+STATIC_DIR = PROJECT_ROOT / "Frontend" / "Static"
 
 # Render-safe writable directory (ephemeral)
 AUDIO_OUTPUT_DIR = pathlib.Path("/tmp/correct_pronunciation_output")
@@ -161,7 +161,7 @@ def learn_prefilled(word):
         return redirect("/learn")
 
     return render_template(
-        "learn.html",
+        "Learn.html",
         result=None,
         error=None,
         user_text=word,
