@@ -11,15 +11,14 @@ from Backend.ApiCalls.helpers.text_to_speech import tts
 from Backend.ApiCalls.helpers.phonetic_help import phonetic_help
 
 # --------------------------------------------------
-# PATHS (ABSOLUTE, PRODUCTION-SAFE)
+# PATHS (MATCH REAL FOLDER NAMES)
 # --------------------------------------------------
 BASE_DIR = pathlib.Path(__file__).resolve().parent          # Backend/
-PROJECT_ROOT = BASE_DIR.parent                             # repo-root/
+PROJECT_ROOT = BASE_DIR.parent                             # DEHACK/
 
 TEMPLATES_DIR = PROJECT_ROOT / "Frontend" / "Templates"
 STATIC_DIR = PROJECT_ROOT / "Frontend" / "Static"
 
-# Render-safe writable directory (ephemeral)
 AUDIO_OUTPUT_DIR = pathlib.Path("/tmp/correct_pronunciation_output")
 
 # --------------------------------------------------
@@ -35,7 +34,7 @@ app.config["ENV"] = "production"
 app.config["DEBUG"] = False
 
 # --------------------------------------------------
-# ENV + CLIENT INITIALIZATION
+# ENV + CLIENT
 # --------------------------------------------------
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
 if not SARVAM_API_KEY:
@@ -154,7 +153,7 @@ def home():
     return render_template("Home.html")
 
 
-@app.route("/learn/<word>", methods=["GET"])
+@app.route("/learn/<word>")
 def learn_prefilled(word):
     language = WORD_LANGUAGE_MAP.get(word.lower())
     if not language:
@@ -193,7 +192,7 @@ def learn():
             result = process_learn(selected_language, processed_text)
 
     return render_template(
-        "learn.html",
+        "Learn.html",
         result=result,
         error=error,
         user_text=user_text,
@@ -214,10 +213,3 @@ def serve_audio(filename):
 @app.route("/about")
 def about():
     return render_template("About.html")
-
-# --------------------------------------------------
-# ERROR HANDLING
-# --------------------------------------------------
-@app.errorhandler(500)
-def internal_error(e):
-    return "Internal Server Error", 500
