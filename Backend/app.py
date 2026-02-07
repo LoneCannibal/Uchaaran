@@ -5,6 +5,9 @@ from sarvamai import SarvamAI
 from sarvamai.play import save
 import os
 import pathlib
+import sys
+sys.path.append(str(pathlib.Path(__file__).resolve().parent))
+
 
 from ApiCalls.helpers.text_to_speech import tts
 from ApiCalls.helpers.phonetic_help import phonetic_help
