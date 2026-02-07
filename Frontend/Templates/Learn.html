@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Learn Pronunciation</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Custom Theme -->
+    <link rel="stylesheet" href="/static/css/Styles.css">
+
+    <style>
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: #000;
+            padding: 6px;
+        }
+
+        .icon-btn:hover {
+            color: #0d6efd;
+        }
+
+        .clear-btn {
+            display: none;
+        }
+
+        /* Loading dots */
+        .loading-dots {
+            font-size: 1.6rem;
+            font-weight: bold;
+            letter-spacing: 6px;
+        }
+
+        .loading-dots span {
+            animation: blink 1.4s infinite both;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes blink {
+            0% {
+                opacity: 0.2;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.2;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h2 {
+                font-size: 1.6rem;
+            }
+
+            .btn-lg {
+                width: 100%;
+            }
+        }
+
+        /* ✅ FIX: preserve formatting for pronunciation text */
+        .how-to-say-box {
+            white-space: pre-line;
+            line-height: 1.6;
+            font-style: normal;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg px-3">
+        <a class="navbar-brand fw-bold" href="/">उचारान्</a>
+    </nav>
+
+    <!-- Main -->
+    <div class="container d-flex justify-content-center mt-3 mt-md-5 px-2">
+        <div style="width:100%; max-width:650px;">
+
+            <h2 class="text-center fw-bold mb-4">Learn Pronunciation</h2>
+
+            <form action="/learn" method="POST" enctype="multipart/form-data" id="learnForm">
+
+                <!-- Language -->
+                <div class="section-box mb-3">
+                    <label class="form-label fw-bold">Choose Language</label>
+                    <select class="form-select" name="language" required>
+                        <option value="">Select a language</option>
+                        {% for lang in
+                        ["Hindi","Bengali","Tamil","Telugu","Gujarati","Kannada","Malayalam","Marathi","Punjabi","Odia"]
+                        %}
+                        <option value="{{ lang }}" {% if selected_language==lang %}selected{% endif %}>
+                            {{ lang }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Text input -->
+                <div class="section-box mb-3">
+                    <label class="form-label fw-bold">Type text or scan from image</label>
+
+                    <div class="position-relative">
+                        <textarea id="textInput" name="text_input" class="form-control pe-5" rows="3"
+                            placeholder="Type your text here..."
+                            oninput="toggleClearButton()">{{ user_text | default("") }}</textarea>
+
+                        <!-- Clear button -->
+                        <button type="button" id="clearBtn"
+                            class="icon-btn clear-btn position-absolute top-50 end-0 translate-middle-y me-2"
+                            onclick="clearText()">
+                            <i class="bi bi-x-circle-fill fs-5"></i>
+                        </button>
+                    </div>
+
+                    <!-- Camera / Gallery buttons -->
+                    <div class="d-flex gap-2 mt-2">
+                        <button type="button" class="btn btn-outline-secondary w-100" onclick="openCamera()">
+                            <i class="bi bi-camera"></i> Camera
+                        </button>
+
+                        <button type="button" class="btn btn-outline-secondary w-100" onclick="openGallery()">
+                            <i class="bi bi-images"></i> Gallery
+                        </button>
+                    </div>
+
+                    <!-- Hidden file inputs -->
+                    <input type="file" name="image" id="cameraInput" accept="image/*" capture="environment"
+                        style="display:none">
+                    <input type="file" name="image" id="galleryInput" accept="image/*" style="display:none">
+                </div>
+
+                <!-- Submit -->
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        Learn
+                    </button>
+                </div>
+
+            </form>
+
+            <!-- Loading -->
+            <div id="loadingIndicator" class="text-center mt-4 d-none">
+                <div class="fw-bold mb-2">Generating pronunciation</div>
+                <div class="loading-dots">
+                    <span>.</span><span>.</span><span>.</span>
+                </div>
+            </div>
+
+            <!-- Results -->
+            {% if result %}
+            <script>
+                document.getElementById("loadingIndicator")?.classList.add("d-none");
+            </script>
+
+            <div class="section-box mt-4">
+                <h4 class="fw-bold mb-3">Pronunciation Ready</h4>
+
+                <div class="mb-2">
+                    <strong>Language:</strong>
+                    <span class="badge bg-primary">{{ result.language }}</span>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Processed Text:</strong>
+                    <div class="border rounded p-3 mt-2 bg-light fs-5">
+                        {{ result.text }}
+                    </div>
+                </div>
+
+                {% if result.how_to_say %}
+                <div class="mb-3">
+                    <strong>How to say it:</strong>
+                    <div class="border rounded p-3 mt-2 bg-light how-to-say-box">
+                        {{ result.how_to_say }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <strong>Audio Pronunciation:</strong>
+                    <audio controls autoplay class="w-100 mt-2">
+                        <source src="/audio/{{ result.pronunciation_audio }}" type="audio/wav">
+                    </audio>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById("textInput");
+        const clearBtn = document.getElementById("clearBtn");
+
+        function toggleClearButton() {
+            clearBtn.style.display = textInput.value.trim() ? "block" : "none";
+        }
+
+        function clearText() {
+            textInput.value = "";
+            toggleClearButton();
+            textInput.focus();
+        }
+
+        function openCamera() {
+            document.getElementById("cameraInput").click();
+        }
+
+        function openGallery() {
+            document.getElementById("galleryInput").click();
+        }
+
+        toggleClearButton();
+
+        document.getElementById("learnForm").addEventListener("submit", () => {
+            document.getElementById("loadingIndicator").classList.remove("d-none");
+        });
+    </script>
+
+</body>
+
+</html>

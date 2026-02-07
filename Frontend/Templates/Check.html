@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Pronunciation</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom Theme -->
+    <link rel="stylesheet" href="/static/css/Styles.css">
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg px-3">
+    <a class="navbar-brand fw-bold" href="/">उचारान्</a>
+</nav>
+
+<div class="container d-flex justify-content-center mt-5">
+
+    <div style="width: 100%; max-width: 650px;">
+
+        <h2 class="text-center fw-bold mb-4">Check Your Pronunciation</h2>
+
+        <form action="/check" method="POST" enctype="multipart/form-data">
+
+            <!-- Language Dropdown -->
+            <div class="section-box">
+                <label class="form-label fw-bold">Choose Language</label>
+                <select class="form-select" name="language" required>
+                    <option value="">Select a language</option>
+                    <option>Hindi</option>
+                    <option>Bengali</option>
+                    <option>Tamil</option>
+                    <option>Telugu</option>
+                    <option>Gujarati</option>
+                    <option>Kannada</option>
+                    <option>Malayalam</option>
+                    <option>Marathi</option>
+                    <option>Punjabi</option>
+                    <option>Odia</option>
+                </select>
+            </div>
+
+            <!-- Upload Audio -->
+            <div class="section-box">
+                <label class="form-label fw-bold">Upload Audio (one word)</label>
+                <input type="file" name="audio" accept="audio/*" class="form-control">
+            </div>
+
+            <!-- OR record audio -->
+            <div class="section-box text-center">
+
+                <label class="form-label fw-bold mb-3">Or record your voice</label>
+
+                <!-- Mic Button -->
+                <button type="button" class="btn btn-primary btn-lg rounded-circle" 
+                        id="micButton" style="width:80px; height:80px;">
+                    🎤
+                </button>
+
+                <p id="recordStatus" class="mt-2 text-muted">Tap to start recording</p>
+
+                <!-- Audio Preview -->
+                <audio id="audioPreview" controls style="display:none; margin-top:10px; width:100%;"></audio>
+
+                <!-- Audio Blob (hidden input) -->
+                <input type="hidden" name="mic_audio" id="micAudioInput">
+            </div>
+
+            <!-- Submit Button -->
+            <div class="text-center mt-3">
+                <button type="submit" class="btn btn-primary btn-lg">Check</button>
+            </div>
+
+        </form>
+
+        <!-- Backend Results -->
+        {% if result %}
+        <div class="section-box mt-4">
+            <h4 class="fw-bold">Results</h4>
+            <p>{{ result }}</p>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- ⭐ AUDIO RECORDING SCRIPT -->
+<script>
+let mediaRecorder;
+let audioChunks = [];
+
+document.getElementById("micButton").addEventListener("click", async () => {
+
+    const status = document.getElementById("recordStatus");
+    const preview = document.getElementById("audioPreview");
+
+    if (!mediaRecorder || mediaRecorder.state === "inactive") {
+        // Start recording
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.start();
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            preview.src = audioUrl;
+            preview.style.display = "block";
+
+            // Store audio in hidden input (Base64)
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                document.getElementById("micAudioInput").value = reader.result;
+            };
+            reader.readAsDataURL(audioBlob);
+        };
+
+        status.textContent = "Recording... Tap again to stop";
+    } else {
+        // Stop recording
+        mediaRecorder.stop();
+        status.textContent = "Recording stopped";
+    }
+});
+</script>
+
+</body>
+</html>

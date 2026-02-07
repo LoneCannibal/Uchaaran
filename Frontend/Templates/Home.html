@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>उचारान्</title>
+
+    <!-- ✅ CRITICAL FOR MOBILE -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom Theme -->
+    <link rel="stylesheet" href="/static/css/Styles.css">
+
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+
+    <style>
+        /* ---------- HERO ---------- */
+        .hero-section {
+            padding: 80px 20px;
+        }
+
+        .logo-img {
+            width: 220px;
+        }
+
+        /* ---------- ROTATING WORD ---------- */
+        .rotating-word {
+            display: inline-block;
+            color: black;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+
+        .rotating-word.fade-out {
+            opacity: 0;
+            transform: translateY(-6px);
+        }
+
+        .rotating-word.fade-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ---------- MOBILE OPTIMIZATION ---------- */
+        @media (max-width: 768px) {
+
+            .hero-section {
+                padding: 48px 16px;
+            }
+
+            .navbar-brand {
+                font-size: 1.4rem;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .lead {
+                font-size: 1.05rem;
+            }
+
+            .logo-img {
+                width: 160px;
+            }
+
+            .fs-2 {
+                font-size: 1.3rem !important;
+            }
+
+            .btn-lg {
+                width: 100%;
+                font-size: 1.1rem;
+                padding: 0.85rem;
+                margin-bottom: 0.75rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light px-3">
+        <a class="navbar-brand fw-bold" href="/">उचारान्</a>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section text-center container">
+
+        <!-- Logo -->
+        <img src="/static/logo.png" alt="App Logo" class="logo-img mb-4">
+
+        <!-- Title -->
+        <h1 class="fw-bold mb-3">
+            Master Pronunciation in Any Indian Language
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="lead">
+            Learn the correct sounds, check your pronunciation score,
+            and improve daily.
+        </p>
+
+        <!-- Rotating Text -->
+        <p class="mt-5 fs-2 text-muted text-center">
+            Learn how to say<br>
+            <a id="rotating-word"
+               href="#"
+               class="rotating-word fw-semibold text-decoration-none">
+                Namaste
+            </a>
+        </p>
+
+        
+
+        <!-- Action Buttons -->
+        <div class="mt-4">
+            <a href="/learn" class="btn btn-primary btn-lg me-md-3">
+                Learn Pronunciation
+            </a>
+
+            <a href="/check" class="btn btn-primary btn-lg me-md-3">
+                Check My Pronunciation
+            </a>
+        </div>
+
+    </section>
+
+    <!-- Script -->
+    <script>
+        const words = [
+            { text: "Vizhinjam", url: "/learn/vizhinjam", language : "Malayalam"},
+            { text: "Kozhikode", url: "/learn/kozhikode", language : "Malayalam" },
+            { text: "Pazham", url: "/learn/pazham", language : "Tamil"},
+            { text: "Sutrchulal", url: "/learn/sutrchulal", language : "Tamil"},
+            { text: "Namaste", url: "/learn/Namaste", language : "Hindi"},
+            { text: "Dharti", url: "/learn/Dharti", language : "Hindi"},
+            { text: "Bhishon", url: "/learn/bhishon", language: "Bengali" },
+            { text: "Dhrubo", url: "/learn/dhrubo", language: "Bengali" },
+            { text: "Draaksha", url: "/learn/draaksha", language: "Telugu" },
+            { text: "Sampurnam", url: "/learn/sampurnam", language: "Telugu" },
+            { text: "Snehaankita", url: "/learn/snehaankita", language: "Gujarati" },
+            { text: "Kshatriya", url: "/learn/kshatriya", language: "Gujarati" },
+            { text: "Hrudaya", url: "/learn/hrudaya", language: "Kannada" },
+            { text: "Dhwani", url: "/learn/dhwani", language: "Kannada" },
+            { text: "Chhadna", url: "/learn/chhadna", language: "Punjabi" },
+            { text: "Bhalla", url: "/learn/bhalla", language: "Punjabi" },
+            { text: "Dhrushti", url: "/learn/dhrushti", language: "Odia" },
+            { text: "Chhabi", url: "/learn/chhabi", language: "Odia" }
+        ];
+
+        let index = 0;
+        const wordElement = document.getElementById("rotating-word");
+
+        function rotateWord() {
+            wordElement.classList.remove("fade-in");
+            wordElement.classList.add("fade-out");
+
+            setTimeout(() => {
+                index = (index + 1) % words.length;
+                wordElement.textContent = words[index].text;
+                wordElement.href = words[index].url;
+
+                wordElement.classList.remove("fade-out");
+                wordElement.classList.add("fade-in");
+            }, 350);
+        }
+
+        wordElement.classList.add("fade-in");
+        setInterval(rotateWord, 3000);
+    </script>
+    <footer class="app-footer mt-5">
+    <footer class="app-footer mt-5">
+    <div class="container text-center py-4">
+        <div class="mb-2">
+            <span class="footer-text">
+                Developed with ❤️ by Team MSD
+            </span>
+        </div>
+
+        <a href="/about" class="footer-link">
+            About Us
+        </a>
+    </div>
+</footer>
+</footer>
+</body>
+
+</html>
