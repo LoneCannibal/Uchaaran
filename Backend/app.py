@@ -1,25 +1,39 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, send_from_directory
 import re
 import requests
 from sarvamai import SarvamAI
 from sarvamai.play import save
-import os, pathlib
+import os
+import pathlib
+
 from ApiCalls.helpers.text_to_speech import tts
 from ApiCalls.helpers.phonetic_help import phonetic_help
-from flask import send_from_directory
 
 # --------------------------------------------------
 # GLOBALS
 # --------------------------------------------------
-client = None
 BASE_DIR = pathlib.Path(__file__).resolve().parent
-AUDIO_OUTPUT_DIR = BASE_DIR.parent / "Data" / "correct_pronunciation_output"
+
+# Render-safe writable directory (ephemeral)
+AUDIO_OUTPUT_DIR = pathlib.Path("/tmp/correct_pronunciation_output")
 
 app = Flask(
     __name__,
     template_folder="../frontend/templates",
     static_folder="../frontend/static"
 )
+
+app.config["ENV"] = "production"
+app.config["DEBUG"] = False
+
+# --------------------------------------------------
+# ENV + CLIENT INITIALIZATION (PRODUCTION SAFE)
+# --------------------------------------------------
+SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
+if not SARVAM_API_KEY:
+    raise RuntimeError("SARVAM_API_KEY not set")
+
+client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
 
 # --------------------------------------------------
 # LANGUAGE MAPS
@@ -61,11 +75,11 @@ WORD_LANGUAGE_MAP = {
 # --------------------------------------------------
 # HELPERS
 # --------------------------------------------------
-def is_english(text):
+def is_english(text: str) -> bool:
     return bool(re.fullmatch(r"[A-Za-z\s]+", text))
 
 
-def transliterate_to_native(text, language):
+def transliterate_to_native(text: str, language: str) -> str:
     lang_code = GOOGLE_LANG_MAP.get(language)
     if not lang_code or not is_english(text):
         return text
@@ -90,17 +104,16 @@ def transliterate_to_native(text, language):
     return text
 
 
-def clean_and_format(text):
+def clean_and_format(text: str) -> str:
     text = re.sub(r"\*\*", "", text)
     text = re.sub(r"#+\s*", "", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
-
 # --------------------------------------------------
 # CORE PROCESSING
 # --------------------------------------------------
-def process_learn(language, text_input):
+def process_learn(language: str, text_input: str) -> dict:
     AUDIO_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     safe_text = re.sub(r"[^\w\-]", "_", text_input.strip())
@@ -124,7 +137,6 @@ def process_learn(language, text_input):
         "pronunciation_audio": filename,
         "how_to_say": how_to_say
     }
-
 
 # --------------------------------------------------
 # ROUTES
@@ -180,6 +192,7 @@ def learn():
         selected_language=selected_language
     )
 
+
 @app.route("/check")
 def check():
     return render_template("Check.html")
@@ -196,12 +209,8 @@ def about():
 
 
 # --------------------------------------------------
-# RUN
+# ERROR HANDLING (OPTIONAL BUT RECOMMENDED)
 # --------------------------------------------------
-if __name__ == "__main__":
-    SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
-    if not SARVAM_API_KEY:
-        raise KeyError("SARVAM_API_KEY not found")
-
-    client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
-    #app.run(debug=False)
+@app.errorhandler(500)
+def internal_error(e):
+    return "Internal Server Error", 500
