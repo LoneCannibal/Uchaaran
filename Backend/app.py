@@ -13,6 +13,11 @@ from sarvamai.play import save
 from Backend.ApiCalls.helpers.text_to_speech import tts
 from Backend.ApiCalls.helpers.phonetic_help import phonetic_help
 
+import pytesseract
+import cv2
+
+
+
 # --------------------------------------------------
 # PATHS
 # --------------------------------------------------
@@ -168,6 +173,23 @@ def score_pronunciation(expected: str, spoken: str) -> float:
     similarity = fuzz.ratio(expected, spoken)
     return round((similarity / 100) * 10, 1)
 
+
+def extract_text_from_image(image_path: str) -> str:
+    """
+    English OCR using Tesseract (no torch)
+    """
+    img = cv2.imread(image_path)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    text = pytesseract.image_to_string(
+        gray,
+        lang="eng",
+        config="--psm 6"
+    )
+
+    return text.strip()
+
+
 # --------------------------------------------------
 # CORE PROCESSING
 # --------------------------------------------------
@@ -228,19 +250,47 @@ def learn():
 
     if request.method == "POST":
         selected_language = request.form.get("language")
-        user_text = request.form.get("text_input", "").strip()
+
+        typed_text = request.form.get("text_input", "").strip()
+        image = request.files.get("image")
 
         if not selected_language:
             error = "Please select a language."
-        elif not user_text:
-            error = "Please provide text."
-        else:
+
+        # CASE 1: IMAGE PROVIDED → OCR
+        elif image and image.filename:
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+            image.save(tmp.name)
+
+            ocr_text = extract_text_from_image(tmp.name)
+
+            if not ocr_text:
+                error = "No readable text found in image."
+            else:
+                user_text = ocr_text
+
+                processed_text = (
+                    transliterate_to_native(ocr_text, selected_language)
+                    if is_english(ocr_text)
+                    else ocr_text
+                )
+
+                result = process_learn(selected_language, processed_text)
+
+        # CASE 2: TYPED TEXT
+        elif typed_text:
+            user_text = typed_text
+
             processed_text = (
-                transliterate_to_native(user_text, selected_language)
-                if is_english(user_text)
-                else user_text
+                transliterate_to_native(typed_text, selected_language)
+                if is_english(typed_text)
+                else typed_text
             )
+
             result = process_learn(selected_language, processed_text)
+
+        else:
+            error = "Please enter text or upload an image."
 
     return render_template(
         "Learn.html",
@@ -249,6 +299,39 @@ def learn():
         user_text=user_text,
         selected_language=selected_language
     )
+
+
+
+# @app.route("/learn", methods=["GET", "POST"])
+# def learn():
+#     result = None
+#     error = None
+#     user_text = ""
+#     selected_language = ""
+
+#     if request.method == "POST":
+#         selected_language = request.form.get("language")
+#         user_text = request.form.get("text_input", "").strip()
+
+#         if not selected_language:
+#             error = "Please select a language."
+#         elif not user_text:
+#             error = "Please provide text."
+#         else:
+#             processed_text = (
+#                 transliterate_to_native(user_text, selected_language)
+#                 if is_english(user_text)
+#                 else user_text
+#             )
+#             result = process_learn(selected_language, processed_text)
+
+#     return render_template(
+#         "Learn.html",
+#         result=result,
+#         error=error,
+#         user_text=user_text,
+#         selected_language=selected_language
+#     )
 
 # --------------------------------------------------
 # CHECK PRONUNCIATION
