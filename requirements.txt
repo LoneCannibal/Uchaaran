@@ -27,6 +27,7 @@ pillow==12.1.0
 pydantic==2.12.5
 pydantic_core==2.41.5
 Pygments==2.19.2
+pytesseract
 PyYAML==6.0.3
 rapidfuzz==3.6.2
 regex==2026.1.15
