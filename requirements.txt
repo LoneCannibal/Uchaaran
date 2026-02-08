@@ -60,5 +60,5 @@ websockets==16.0
 Werkzeug==3.1.5
 gunicorn==21.2.0
 
-# 🔹 REQUIRED FOR /check PRONUNCIATION SCORING
+# REQUIRED FOR /check PRONUNCIATION SCORING
 rapidfuzz==3.6.2

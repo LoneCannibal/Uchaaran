@@ -16,8 +16,8 @@ from Backend.ApiCalls.helpers.phonetic_help import phonetic_help
 # --------------------------------------------------
 # PATHS
 # --------------------------------------------------
-BASE_DIR = pathlib.Path(__file__).resolve().parent          # Backend/
-PROJECT_ROOT = BASE_DIR.parent                             # repo root
+BASE_DIR = pathlib.Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent
 
 TEMPLATES_DIR = PROJECT_ROOT / "Frontend" / "Templates"
 STATIC_DIR = PROJECT_ROOT / "Frontend" / "Static"
@@ -59,6 +59,20 @@ GOOGLE_LANG_MAP = {
     "Marathi": "mr",
     "Punjabi": "pa",
     "Odia": "or"
+}
+
+SARVAM_LANG_MAP = {
+    "Hindi": "hi-IN",
+    "Bengali": "bn-IN",
+    "Tamil": "ta-IN",
+    "Telugu": "te-IN",
+    "Gujarati": "gu-IN",
+    "Kannada": "kn-IN",
+    "Malayalam": "ml-IN",
+    "Marathi": "mr-IN",
+    "Punjabi": "pa-IN",
+    "Odia": "or-IN",
+    "English": "en-IN"
 }
 
 WORD_LANGUAGE_MAP = {
@@ -131,13 +145,23 @@ def save_base64_audio(data_url: str) -> str:
     return tmp.name
 
 
-def transcribe_audio(audio_path: str) -> str:
+def transcribe_audio(audio_path: str, language: str) -> str:
     """
-    ASR transcription (Option 3)
-    Replace implementation if Sarvam exposes a different API.
+    Correct Sarvam Speech-to-Text call
     """
-    result = client.speech_to_text(audio_path)
-    return result.strip().lower()
+    lang_code = SARVAM_LANG_MAP.get(language, "en-IN")
+
+    response = client.speech_to_text.transcribe(
+        audio_path=audio_path,
+        language_code=lang_code
+    )
+
+    if isinstance(response, dict):
+        text = response.get("text", "")
+    else:
+        text = getattr(response, "text", "")
+
+    return text.strip().lower()
 
 
 def score_pronunciation(expected: str, spoken: str) -> float:
@@ -226,7 +250,6 @@ def learn():
         selected_language=selected_language
     )
 
-
 # --------------------------------------------------
 # CHECK PRONUNCIATION (OPTION 3)
 # --------------------------------------------------
@@ -235,7 +258,9 @@ def check():
     result = None
 
     if request.method == "POST":
+        language = request.form.get("language")
         expected_text = request.form.get("expected_text", "").lower().strip()
+
         audio_file = request.files.get("audio")
         mic_audio = request.form.get("mic_audio")
 
@@ -250,14 +275,12 @@ def check():
             audio_path = save_base64_audio(mic_audio)
 
         else:
-            result = {"error": "No audio provided"}
-            return render_template("Check.html", result=result)
+            return render_template("Check.html", result={"error": "No audio provided"})
 
-        spoken_text = transcribe_audio(audio_path)
+        spoken_text = transcribe_audio(audio_path, language)
 
         if not spoken_text:
-            result = {"error": "Could not understand audio"}
-            return render_template("Check.html", result=result)
+            return render_template("Check.html", result={"error": "Could not understand audio"})
 
         score = score_pronunciation(expected_text, spoken_text)
 
