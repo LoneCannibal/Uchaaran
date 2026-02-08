@@ -3,7 +3,10 @@ import re
 import requests
 import os
 import pathlib
+import tempfile
+import base64
 
+from rapidfuzz import fuzz
 from sarvamai import SarvamAI
 from sarvamai.play import save
 
@@ -11,10 +14,10 @@ from Backend.ApiCalls.helpers.text_to_speech import tts
 from Backend.ApiCalls.helpers.phonetic_help import phonetic_help
 
 # --------------------------------------------------
-# PATHS (MATCH REAL FOLDER NAMES)
+# PATHS
 # --------------------------------------------------
 BASE_DIR = pathlib.Path(__file__).resolve().parent          # Backend/
-PROJECT_ROOT = BASE_DIR.parent                             # DEHACK/
+PROJECT_ROOT = BASE_DIR.parent                             # repo root
 
 TEMPLATES_DIR = PROJECT_ROOT / "Frontend" / "Templates"
 STATIC_DIR = PROJECT_ROOT / "Frontend" / "Static"
@@ -104,7 +107,6 @@ def transliterate_to_native(text: str, language: str) -> str:
 
         if response[0] == "SUCCESS":
             return response[1][0][1][0]
-
     except Exception as e:
         print("Transliteration error:", e)
 
@@ -116,6 +118,31 @@ def clean_and_format(text: str) -> str:
     text = re.sub(r"#+\s*", "", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
+
+
+def save_base64_audio(data_url: str) -> str:
+    header, encoded = data_url.split(",", 1)
+    audio_bytes = base64.b64decode(encoded)
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+    tmp.write(audio_bytes)
+    tmp.close()
+
+    return tmp.name
+
+
+def transcribe_audio(audio_path: str) -> str:
+    """
+    ASR transcription (Option 3)
+    Replace implementation if Sarvam exposes a different API.
+    """
+    result = client.speech_to_text(audio_path)
+    return result.strip().lower()
+
+
+def score_pronunciation(expected: str, spoken: str) -> float:
+    similarity = fuzz.ratio(expected, spoken)  # 0–100
+    return round((similarity / 100) * 10, 1)
 
 # --------------------------------------------------
 # CORE PROCESSING
@@ -200,9 +227,47 @@ def learn():
     )
 
 
-@app.route("/check")
+# --------------------------------------------------
+# CHECK PRONUNCIATION (OPTION 3)
+# --------------------------------------------------
+@app.route("/check", methods=["GET", "POST"])
 def check():
-    return render_template("Check.html")
+    result = None
+
+    if request.method == "POST":
+        expected_text = request.form.get("expected_text", "").lower().strip()
+        audio_file = request.files.get("audio")
+        mic_audio = request.form.get("mic_audio")
+
+        audio_path = None
+
+        if audio_file and audio_file.filename:
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+            audio_file.save(tmp.name)
+            audio_path = tmp.name
+
+        elif mic_audio:
+            audio_path = save_base64_audio(mic_audio)
+
+        else:
+            result = {"error": "No audio provided"}
+            return render_template("Check.html", result=result)
+
+        spoken_text = transcribe_audio(audio_path)
+
+        if not spoken_text:
+            result = {"error": "Could not understand audio"}
+            return render_template("Check.html", result=result)
+
+        score = score_pronunciation(expected_text, spoken_text)
+
+        result = {
+            "expected": expected_text,
+            "spoken": spoken_text,
+            "score": score
+        }
+
+    return render_template("Check.html", result=result)
 
 
 @app.route("/audio/<filename>")

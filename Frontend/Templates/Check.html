@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Check Pronunciation</title>
@@ -22,43 +22,43 @@
 </nav>
 
 <div class="container d-flex justify-content-center mt-5">
-
-    <div style="width: 100%; max-width: 650px;">
+    <div style="width:100%; max-width:650px;">
 
         <h2 class="text-center fw-bold mb-4">Check Your Pronunciation</h2>
 
-        <form action="/check" method="POST" enctype="multipart/form-data">
+        <form action="/check" method="POST" enctype="multipart/form-data" id="checkForm">
 
             <!-- Language Dropdown -->
-            <div class="section-box">
+            <div class="section-box mb-3">
                 <label class="form-label fw-bold">Choose Language</label>
                 <select class="form-select" name="language" required>
                     <option value="">Select a language</option>
-                    <option>Hindi</option>
-                    <option>Bengali</option>
-                    <option>Tamil</option>
-                    <option>Telugu</option>
-                    <option>Gujarati</option>
-                    <option>Kannada</option>
-                    <option>Malayalam</option>
-                    <option>Marathi</option>
-                    <option>Punjabi</option>
-                    <option>Odia</option>
+                    {% for lang in ["Hindi","Bengali","Tamil","Telugu","Gujarati","Kannada","Malayalam","Marathi","Punjabi","Odia"] %}
+                    <option value="{{ lang }}">{{ lang }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
+            <!-- Expected Word -->
+            <div class="section-box mb-3">
+                <label class="form-label fw-bold">Expected Word</label>
+                <input type="text"
+                       name="expected_text"
+                       class="form-control"
+                       placeholder="e.g. Namaste"
+                       required>
+            </div>
+
             <!-- Upload Audio -->
-            <div class="section-box">
+            <div class="section-box mb-3">
                 <label class="form-label fw-bold">Upload Audio (one word)</label>
                 <input type="file" name="audio" accept="audio/*" class="form-control">
             </div>
 
             <!-- OR record audio -->
-            <div class="section-box text-center">
-
+            <div class="section-box text-center mb-3">
                 <label class="form-label fw-bold mb-3">Or record your voice</label>
 
-                <!-- Mic Button -->
                 <button type="button"
                         class="btn btn-primary btn-lg rounded-circle"
                         id="micButton"
@@ -70,36 +70,68 @@
                     Tap to start recording
                 </p>
 
-                <!-- Audio Preview -->
                 <audio id="audioPreview"
                        controls
                        style="display:none; margin-top:10px; width:100%;"></audio>
 
-                <!-- Audio Blob (hidden input) -->
                 <input type="hidden" name="mic_audio" id="micAudioInput">
             </div>
 
-            <!-- Submit Button -->
+            <!-- Submit -->
             <div class="text-center mt-3">
                 <button type="submit" class="btn btn-primary btn-lg">
-                    Check
+                    Check Pronunciation
                 </button>
             </div>
-
         </form>
 
-        <!-- Backend Results -->
+        <!-- RESULTS -->
         {% if result %}
-        <div class="section-box mt-4">
-            <h4 class="fw-bold">Results</h4>
-            <p>{{ result }}</p>
+        <div class="section-box mt-5">
+
+            <h4 class="fw-bold mb-3 text-center">Results</h4>
+
+            <div class="mb-2">
+                <strong>Expected:</strong>
+                <span class="badge bg-secondary fs-6">
+                    {{ result.expected }}
+                </span>
+            </div>
+
+            <div class="mb-2">
+                <strong>You said:</strong>
+                <span class="badge bg-info text-dark fs-6">
+                    {{ result.spoken }}
+                </span>
+            </div>
+
+            <div class="mb-3">
+                <strong>Score:</strong>
+                <span class="badge bg-success fs-5">
+                    {{ result.score }}/10
+                </span>
+            </div>
+
+            {% if result.score >= 8 %}
+                <div class="alert alert-success">
+                    Excellent pronunciation 🎉
+                </div>
+            {% elif result.score >= 5 %}
+                <div class="alert alert-warning">
+                    Good attempt — try again for perfection 🙂
+                </div>
+            {% else %}
+                <div class="alert alert-danger">
+                    Needs improvement — listen and try again 🔁
+                </div>
+            {% endif %}
         </div>
         {% endif %}
 
     </div>
 </div>
 
-<!-- ⭐ AUDIO RECORDING SCRIPT -->
+<!-- 🎙️ AUDIO RECORDING SCRIPT -->
 <script>
 let mediaRecorder;
 let audioChunks = [];
@@ -120,8 +152,7 @@ document.getElementById("micButton").addEventListener("click", async () => {
 
         mediaRecorder.onstop = () => {
             const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            preview.src = audioUrl;
+            preview.src = URL.createObjectURL(audioBlob);
             preview.style.display = "block";
 
             const reader = new FileReader();
