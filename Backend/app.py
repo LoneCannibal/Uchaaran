@@ -37,7 +37,7 @@ app.config["ENV"] = "production"
 app.config["DEBUG"] = False
 
 # --------------------------------------------------
-# ENV + CLIENT
+# ENV + SARVAM CLIENT
 # --------------------------------------------------
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
 if not SARVAM_API_KEY:
@@ -147,7 +147,7 @@ def save_base64_audio(data_url: str) -> str:
 
 def transcribe_audio(audio_path: str, language: str) -> str:
     """
-    Correct Sarvam Speech-to-Text call
+    ✅ CORRECT Sarvam Speech-to-Text usage
     """
     lang_code = SARVAM_LANG_MAP.get(language, "en-IN")
 
@@ -165,7 +165,7 @@ def transcribe_audio(audio_path: str, language: str) -> str:
 
 
 def score_pronunciation(expected: str, spoken: str) -> float:
-    similarity = fuzz.ratio(expected, spoken)  # 0–100
+    similarity = fuzz.ratio(expected, spoken)
     return round((similarity / 100) * 10, 1)
 
 # --------------------------------------------------
@@ -251,7 +251,7 @@ def learn():
     )
 
 # --------------------------------------------------
-# CHECK PRONUNCIATION (OPTION 3)
+# CHECK PRONUNCIATION
 # --------------------------------------------------
 @app.route("/check", methods=["GET", "POST"])
 def check():
@@ -259,7 +259,7 @@ def check():
 
     if request.method == "POST":
         language = request.form.get("language")
-        expected_text = request.form.get("expected_text", "").lower().strip()
+        expected_text = request.form.get("expected_text", "").strip().lower()
 
         audio_file = request.files.get("audio")
         mic_audio = request.form.get("mic_audio")
