@@ -91,9 +91,7 @@
                 <label class="form-label fw-bold">Choose Language</label>
                 <select class="form-select" name="language" required>
                     <option value="">Select a language</option>
-                    {% for lang in
-                    ["Hindi","Bengali","Tamil","Telugu","Gujarati","Kannada","Malayalam","Marathi","Punjabi","Odia"]
-                    %}
+                    {% for lang in languages %}
                     <option value="{{ lang }}" {% if selected_language==lang %}selected{% endif %}>
                         {{ lang }}
                     </option>
@@ -127,9 +125,16 @@
                     </button>
                 </div>
 
-                <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
-                <input type="file" id="galleryInput" accept="image/*" hidden>
+                <!-- Both are named "image": the server reads whichever one was used. -->
+                <input type="file" id="cameraInput" name="image" accept="image/*" capture="environment" hidden
+                       onchange="submitPhoto(this)">
+                <input type="file" id="galleryInput" name="image" accept="image/*" hidden
+                       onchange="submitPhoto(this)">
             </div>
+
+            {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
 
             <div class="text-center mt-4">
                 <button type="submit" class="btn btn-primary btn-lg">
@@ -179,6 +184,26 @@
                     <source src="/audio/{{ result.pronunciation_audio }}" type="audio/wav">
                 </audio>
             </div>
+
+            {% if result.ocr_lines and result.ocr_lines|length > 1 %}
+            <div class="mb-3">
+                <strong>Other text found in the photo:</strong>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    {% for line in result.ocr_lines[1:] %}
+                    <form action="/learn" method="POST" class="d-inline">
+                        <input type="hidden" name="language" value="{{ result.language }}">
+                        <input type="hidden" name="text_input" value="{{ line }}">
+                        <button type="submit" class="btn btn-sm btn-outline-dark">{{ line }}</button>
+                    </form>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <a class="btn btn-outline-dark"
+               href="/check?language={{ result.language | urlencode }}&word={{ result.text | urlencode }}">
+                <i class="bi bi-mic"></i> Practice saying it
+            </a>
         </div>
         {% endif %}
 
@@ -209,9 +234,31 @@
 
     toggleClearButton();
 
-    document.getElementById("learnForm").addEventListener("submit", () => {
+    const learnForm = document.getElementById("learnForm");
+    learnForm.addEventListener("submit", () => {
         document.getElementById("loadingIndicator").classList.remove("d-none");
     });
+
+    // A photo was picked: clear the other file input and send it straight away.
+    function submitPhoto(input) {
+        if (!input.files.length) return;
+        if (!learnForm.language.value) {
+            alert("Choose the language of the text in the photo first.");
+            input.value = "";
+            return;
+        }
+        ["cameraInput", "galleryInput"].forEach(id => {
+            const other = document.getElementById(id);
+            if (other !== input) other.value = "";
+        });
+        textInput.value = "";
+        document.querySelector("#loadingIndicator .fw-bold").textContent = "Reading the photo";
+        learnForm.requestSubmit();
+    }
+
+    {% if auto %}
+    if (learnForm.language.value && textInput.value.trim()) learnForm.requestSubmit();
+    {% endif %}
 </script>
 
 </body>

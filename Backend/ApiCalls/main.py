@@ -16,7 +16,8 @@ if __name__ == "__main__":
     client = SarvamAI(
         api_subscription_key=SARVAM_API_KEY
     )
-    transcription  = stt(client, "C:\\Users\\Aakash\\Documents\\DEHack\\output.wav", lang_code="ml-IN")
+    with open("C:\\Users\\Aakash\\Documents\\DEHack\\output.wav", "rb") as f:
+        transcription = stt(client, f.read(), lang_code="ml-IN")
     print(transcription)
 
 

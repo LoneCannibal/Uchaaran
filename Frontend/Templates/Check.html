@@ -31,10 +31,10 @@
             <!-- Language Dropdown -->
             <div class="section-box mb-3">
                 <label class="form-label fw-bold">Choose Language</label>
-                <select class="form-select" name="language" required>
+                <select class="form-select" name="language" id="language" required>
                     <option value="">Select a language</option>
-                    {% for lang in ["Hindi","Bengali","Tamil","Telugu","Gujarati","Kannada","Malayalam","Marathi","Punjabi","Odia"] %}
-                    <option value="{{ lang }}">{{ lang }}</option>
+                    {% for lang in languages %}
+                    <option value="{{ lang }}" {% if selected_language == lang %}selected{% endif %}>{{ lang }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -44,9 +44,13 @@
                 <label class="form-label fw-bold">Expected Word</label>
                 <input type="text"
                        name="expected_text"
+                       id="expectedText"
                        class="form-control"
                        placeholder="e.g. Namaste"
+                       value="{{ word }}"
+                       maxlength="60"
                        required>
+                <a href="#" id="hearLink" class="small d-inline-block mt-2">🔊 Hear the correct pronunciation first</a>
             </div>
 
             <!-- Upload Audio -->
@@ -86,7 +90,9 @@
         </form>
 
         <!-- RESULTS -->
-        {% if result %}
+        {% if result and result.error %}
+        <div class="alert alert-danger mt-4">{{ result.error }}</div>
+        {% elif result %}
         <div class="section-box mt-5">
 
             <h4 class="fw-bold mb-3 text-center">Results</h4>
@@ -142,7 +148,13 @@ document.getElementById("micButton").addEventListener("click", async () => {
     const preview = document.getElementById("audioPreview");
 
     if (!mediaRecorder || mediaRecorder.state === "inactive") {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        let stream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch {
+            status.textContent = "Microphone access was blocked. Allow it in the browser, or upload a file instead.";
+            return;
+        }
         mediaRecorder = new MediaRecorder(stream);
 
         mediaRecorder.start();
@@ -151,7 +163,9 @@ document.getElementById("micButton").addEventListener("click", async () => {
         mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
 
         mediaRecorder.onstop = () => {
-            const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+            stream.getTracks().forEach(t => t.stop());
+            // Browsers record webm/ogg; label it with its real type so the server can tell Sarvam.
+            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
             preview.src = URL.createObjectURL(audioBlob);
             preview.style.display = "block";
 
@@ -166,6 +180,25 @@ document.getElementById("micButton").addEventListener("click", async () => {
     } else {
         mediaRecorder.stop();
         status.textContent = "Recording stopped";
+    }
+});
+
+document.getElementById("hearLink").addEventListener("click", e => {
+    e.preventDefault();
+    const language = document.getElementById("language").value;
+    const word = document.getElementById("expectedText").value.trim();
+    if (!language || !word) {
+        alert("Choose a language and type the word first.");
+        return;
+    }
+    window.open(`/learn?auto=1&language=${encodeURIComponent(language)}&word=${encodeURIComponent(word)}`, "_blank");
+});
+
+document.getElementById("checkForm").addEventListener("submit", e => {
+    const hasFile = document.querySelector("input[name=audio]").files.length > 0;
+    if (!hasFile && !document.getElementById("micAudioInput").value) {
+        e.preventDefault();
+        document.getElementById("recordStatus").textContent = "Record your voice (or upload a file) first.";
     }
 });
 </script>

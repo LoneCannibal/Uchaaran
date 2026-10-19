@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Secrets (SARVAM_API_KEY etc.)
+.env
+.env.*
+
+# Downloaded OCR models (python scripts/download_tessdata.py)
+tessdata/
+
+# Half-written cache files
+*.part
+
+# Markdown: only README.md is tracked
+*.md
+!README.md
+
+# Large media
+Docs/
+
+# Editors / OS
+.idea/
+.DS_Store
+Thumbs.db

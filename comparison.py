@@ -1,7 +1,9 @@
+import os
+
 from sarvamai import SarvamAI
 
 client = SarvamAI(
-    api_subscription_key="sk_rr5djtfm_pEwx0WELS8wWyhI386Ghdpka",
+    api_subscription_key=os.environ["SARVAM_API_KEY"],
 )
 
 response = client.chat.completions(

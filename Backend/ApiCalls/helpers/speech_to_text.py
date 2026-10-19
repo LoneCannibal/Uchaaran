@@ -1,16 +1,16 @@
-from sarvamai import SarvamAI
-
 MODEL = "saarika:v2.5"
 
 
-def stt(client, filename, lang_code) -> str:
-    client = SarvamAI(
-        api_subscription_key="sk_rr5djtfm_pEwx0WELS8wWyhI386Ghdpka"
-    )
+def stt(client, audio: bytes, lang_code: str, filename: str = "audio.wav", content_type: str = "audio/wav") -> str:
+    """
+    Transcribe a short clip with Sarvam speech-to-text.
 
+    `audio` is the raw file bytes. The filename and content type tell Sarvam the
+    format: browser recordings are usually webm/ogg, not wav.
+    """
     response = client.speech_to_text.transcribe(
-        file=open(filename, "rb"),
-        model= MODEL,
-        language_code=lang_code
+        file=(filename, audio, content_type),
+        model=MODEL,
+        language_code=lang_code,
     )
-    return (response.transcript)
+    return (response.transcript or "").strip()
